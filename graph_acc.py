@@ -1,6 +1,5 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from enum import IntEnum, auto
 
 # 日本語フォント設定
 from matplotlib import rcParams
@@ -8,6 +7,7 @@ rcParams["font.family"] = "sans-serif"
 rcParams["font.sans-serif"] = ["Yu Gothic"]
 
 # データの項目
+from enum import IntEnum, auto
 class item(IntEnum):
     time = 0
     acc_x = auto()
@@ -47,7 +47,7 @@ def LPF(list):
     return list_LPF
 
 # データの読み込み
-filename = "walk"
+filename = "0716acc"
 data = np.loadtxt("data/" + filename + ".csv", delimiter = ",", skiprows = 2, unpack = True) 
 
 # グラフ作成
@@ -60,12 +60,12 @@ graph3 = fig.add_subplot(313)
 graph1.plot(data[item.time], data[item.acc_x], color="black")
 # graph1.plot(data[item.time], LPF(data[item.acc_x]))
 graph2.plot(data[item.time], data[item.acc_y], color="black")
-# graph.plot(data[item.time], LPF(data[item.acc_y]))
+# graph2.plot(data[item.time], LPF(data[item.acc_y]))
 graph3.plot(data[item.time], data[item.acc_z], color="black")
-# grap3.plot(data[item.time], LPF(data[item.acc_z]))
+# graph3.plot(data[item.time], LPF(data[item.acc_z]))
 
 # 値の範囲
-xmin = 95
+xmin = 500
 xmax = xmin + 1.5
 ymin = -15
 ymax = -ymin
