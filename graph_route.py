@@ -1,6 +1,5 @@
 import numpy as np
 import matplotlib.pyplot as plt
-# from mpl_toolkits.mplot3d import Axes3D
 
 # データの項目
 from enum import IntEnum, auto
@@ -33,23 +32,32 @@ class item(IntEnum):
 
 # データの読み込み
 filename = "0716acc"
-data = np.loadtxt("data/" + filename + ".csv", delimiter = ",", skiprows = 2, unpack = True) 
+data = np.loadtxt("data/" + filename + ".csv", delimiter=",", skiprows=2, unpack=True) 
 
+# 画面生成
 fig = plt.figure(figsize=(6, 6))
+
+# グラフ生成
 graph = fig.add_subplot(111)
 
-graph.plot(data[item.pos_step_gyro_x],data[item.pos_step_gyro_y], color="red", label="gyro")
-graph.plot(data[item.pos_step_mag_x],data[item.pos_step_mag_y], color="blue", label="mag")
-# graph.plot(data[item.pos_step_x],data[item.pos_step_y], color="gray")
-# graph.plot(data[item.pos_x],data[item.pos_y], color="blue", label="mag")
+# プロット
+graph.plot(data[item.pos_step_gyro_x], data[item.pos_step_gyro_y], color="red", label="gyro")
+graph.plot(data[item.pos_step_mag_x], data[item.pos_step_mag_y], color="blue", label="mag")
+# graph.plot(data[item.pos_step_x], data[item.pos_step_y], color="gray")
+# graph.plot(data[item.pos_x], data[item.pos_y], color="blue", label="mag")
 
+# ラベル
 graph.set_xlabel("x [m]")
 graph.set_ylabel("y [m]")
 
+# 軸の比率を設定
 graph.set_aspect("equal")
 
+# 注釈
 plt.legend(bbox_to_anchor=(1, 0), loc="lower right", borderaxespad=0, fontsize=12)
 
+# 画像として保存
 plt.savefig("graph/route/" + filename + ".png")
 
+# 表示
 plt.show()

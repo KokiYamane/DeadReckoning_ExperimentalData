@@ -48,7 +48,7 @@ def LPF(list):
 
 # データの読み込み
 filename = "0716acc"
-data = np.loadtxt("data/" + filename + ".csv", delimiter = ",", skiprows = 2, unpack = True) 
+data = np.loadtxt("data/" + filename + ".csv", delimiter=",", skiprows=2, unpack=True) 
 
 # グラフ作成
 fig = plt.figure(figsize=(6, 6))

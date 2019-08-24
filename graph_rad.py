@@ -48,7 +48,7 @@ def LPF(list):
 
 # データの読み込み
 filename = "turnTable2"
-data = np.loadtxt("data/" + filename + ".txt", delimiter = ",", skiprows = 2, unpack = True) 
+data = np.loadtxt("data/" + filename + ".txt", delimiter=",", skiprows=2, unpack=True) 
 
 # 角度理想値
 expected = (data[item.time]+25)*6.12%360-180
