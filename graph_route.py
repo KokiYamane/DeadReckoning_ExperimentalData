@@ -31,8 +31,8 @@ class item(IntEnum):
     pos_step_y = auto()
 
 # データの読み込み
-filename = "0716acc"
-data = np.loadtxt("data/" + filename + ".csv", delimiter=",", skiprows=2, unpack=True) 
+filename = "roundabout2"
+data = np.loadtxt("data/" + filename + ".txt", delimiter=",", skiprows=2, unpack=True) 
 
 # 画面生成
 fig = plt.figure(figsize=(6, 6))
