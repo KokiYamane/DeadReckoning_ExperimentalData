@@ -15,7 +15,7 @@ class rtk(IntEnum):
     height = auto()
 
 # データの読み込み
-filename = "0717"
+filename = "0716"
 accdata = np.loadtxt("accdata/" + filename + "acc.csv", delimiter=",", skiprows=2, unpack=True)
 acctime = list(accdata[acc.time])
 acc_x = list(accdata[acc.acc_x])
@@ -69,15 +69,6 @@ while i >= 0:
         speedlist.insert(i, nowspeed)
     else: i-=1
 
-# # グラフ生成
-# import matplotlib.pyplot as plt
-# fig = plt.figure(figsize=(6, 6))
-# graph = fig.add_subplot(111)
-# graph.plot(timelist, speedlist)
-# # graph.plot(timelist, tmplist)
-# # plt.ylim(0,5)
-# plt.show()
-
 f = open("accdata/" + filename + "acc.csv")
 line = f.readline()
 accstarttime = datetime.datetime.strptime(line, "%Y/%m/%d %H:%M:%S.%f ")
@@ -98,22 +89,12 @@ while i >= 0:
         acctime[i] = round(acctime[i], 3)
     i-=1
 
-# # ファイル書き込み
-# f = open("dataToML/MLdata/" + filename + "acc.txt", mode="w")
-# f.write("time[s], acc_x[m/s^2], acc_y[m/s^2], acc_z[m/s^2]\n")
-# for i in range(len(acctime)):
-#     f.write(str(acctime[i]) + ", ")
-#     f.write(str(acc_x[i]) + ", ")
-#     f.write(str(acc_y[i]) + ", ")
-#     f.write(str(acc_z[i]))
-#     f.write("\n")
-# f.close
-
 # ファイル書き込み
-f = open("MLdata/0717.txt", mode="w")
+f = open("MLdata/" + filename + ".txt", mode="w")
 f.write("time[s], speed[m/s], accwave_x(34)[G], accwave_y(34)[G], accwave_z(34)[G\n")
 for i in range(len(timelist)):
-    f.write(str(timelist[i]) + ", " + str(speedlist[i]/10) + ", ")
+    if 34* (i + 1) > len(acc_x): break
+    f.write(str(timelist[i]) + ", " + str(speedlist[i]) + ", ")
     for j in range(34):
         f.write(str(acc_x[34*i+j] / 9.8) + ", ")
     for j in range(34):
