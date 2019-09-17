@@ -54,7 +54,7 @@ hide1 = np.dot(xwave, w1) + b1
 hide2 = np.dot(hide1, w2) + b2
 output = np.dot(hide2, w3) + b3
 
-# 損失関計算算
+# 損失関数計算
 output = output[:, np.newaxis]
 errer = teach - output
 print(np.average(errer))

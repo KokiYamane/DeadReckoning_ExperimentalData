@@ -1,13 +1,19 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import animation
+import os
+import shutil
 
 class NewralNetwork:
-    def __init__(self, inputdata, theacherdata, shape=[1,3,1]):
+    def __init__(self, inputdata, theacherdata, shape=[1,3,1], epoch=1000, learninglate=0.1):
         self.inputdata = inputdata          # 入力データ
         self.teacherdata = theacherdata     # 教師データ
         self.losslist = []                  # 損失関数
         self.outputdata = None              # 出力
+
+        # ハイパーパラメータ
+        self.epoch = epoch
+        self.learninglate = learninglate
 
         # ニューラルネットワーク
         self.layers = []
@@ -21,8 +27,8 @@ class NewralNetwork:
         self.ax1 = self.fig.add_subplot(1,2,1)
         self.ax2 = self.fig.add_subplot(1,2,2)
 
-    def learn(self, epoch=1000, learninglate=0.1):
-        for i in range(epoch):
+    def learn(self):
+        for i in range(self.epoch):
             # 準伝播
             y = self.inputdata
             for j in range(len(self.layers)):
@@ -38,10 +44,10 @@ class NewralNetwork:
 
             # 重み更新
             for j in range(0, len(self.layers)-1, 2):
-                dy = self.layers[j].update(learninglate)
-            
+                dy = self.layers[j].update(self.learninglate)
+
             # グラフ表示
-            if i % 100 == 0: self.show()
+            if (i+1) % 100 == 0: self.show()
 
         # グラフ表示
         plt.show()
@@ -50,22 +56,25 @@ class NewralNetwork:
         # グラフ１
         self.ax1.cla()
         self.ax1.set_title('LOSS')
-        self.ax1.plot(self.losslist)
-        self.ax1.set_ylim(0, max(self.losslist) * 1.1)
+        self.ax1.set_xlim(-self.epoch * 0.05, self.epoch * 1.05)
+        self.ax1.set_ylim(-max(self.losslist) * 0.05, max(self.losslist) * 1.05)
         self.ax1.grid()
+        self.ax1.plot(self.losslist)
 
         # グラフ２
         self.ax2.cla()
         self.ax2.set_title('output')
-        self.ax2.scatter(self.inputdata, self.teacherdata, label='teacher')
-        self.ax2.scatter(self.inputdata, self.outputdata, label='output')
         self.ax2.grid()
+        self.ax2.plot(range(len(self.inputdata)), self.teacherdata, label='teacher')
+        self.ax2.plot(range(len(self.inputdata)), self.outputdata, label='output')
         self.ax2.legend()
 
         plt.draw()
         plt.pause(1e-10)
 
-    def output(self, directory=''):
+    def output(self, directory='param'):
+        if os.path.isdir(directory): shutil.rmtree(directory)
+        os.mkdir(directory)
         for i in range(0, len(self.layers)-1, 2):
             self.layers[i].output(directory, i)
 
@@ -129,21 +138,22 @@ class NewralNetwork:
         def forward(self, x):
             self.x = x
             return 0.5 * np.average((x - self.t)**2)
-        
+
         def backward(self):
             return self.x - self.t
 
 if __name__ == '__main__':
     # 学習データ
-    x = np.random.rand(500, 1) * 15
-    t = 0.5 * np.cos(x) + 0.5
-    
+    x = np.arange(0, 6*np.pi, 0.1)
+    x = x[:, np.newaxis]
+    t = 0.5 * np.sin(x) + 0.5
+
     # ニューラルネットワーク構築
-    shape = [1, 3, 5, 3, 1]
-    NN = NewralNetwork(x, t, shape)
+    shape = [1, 3, 1]
+    NN = NewralNetwork(x, t, shape, 10000, 0.1)
 
     # 学習
-    NN.learn(10000, 0.1)
+    NN.learn()
 
     # 重みファイル出力
-    NN.output('test')
+    NN.output()
