@@ -16,7 +16,7 @@ class rtk(IntEnum):
     height = auto()
 
 # データの読み込み
-filename = '0912_1815'
+filename = '0912_1800'
 
 accdata = np.loadtxt('accdata/' + filename + 'acc.csv', delimiter=',', skiprows=1, unpack=True, dtype=str)
 acctime = []
