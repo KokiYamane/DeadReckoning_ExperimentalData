@@ -3,6 +3,7 @@ from numpy.random import *
 import matplotlib.pyplot as plt
 import NeuralNetwork as NN
 
+
 # データ読み込み関数
 def loaddata(filename):
     data = np.loadtxt(filename, delimiter=',',
@@ -27,7 +28,8 @@ shape = [150, 30, 10, 1]
 NN = NN.NewralNetwork(inputData, teacherData, shape)
 
 # 学習
-NN.learn(epoch=2000, batchSize=1000, optimizer='Adam', learningRate=0.01, graph=True)
+NN.learn(epoch=2000, learningRate=0.01, batchSize=1000,
+         optimizer='Adam', graph=True)
 
 # 重みファイル出力
 NN.output()
