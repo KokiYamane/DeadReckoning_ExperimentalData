@@ -11,8 +11,8 @@ def loaddata(filename):
     speed = []
     xyzwave = []
     for row in data:
-        speed.append(row[1].astype('float64'))
-        xyzwave.append(row[2: 152].astype('float64'))
+        speed.append(row[1].astype('float32'))
+        xyzwave.append(row[2: 152].astype('float32'))
     speed = np.array(speed)
     teacherData = speed[:, np.newaxis]
     inputData = np.array(xyzwave)
@@ -21,11 +21,11 @@ def loaddata(filename):
 
 # データの読み込み
 filename = '0912_1815'
-inputData, teacherData = loaddata('MLdata/' + filename + '.txt')
+inputData, teacherData = loaddata('data/ML/' + filename + '.csv')
 
 # ニューラルネットワーク構築
 shape = [150, 30, 10, 1]
-NN = NN.NewralNetwork(inputData, teacherData, shape)
+NN = NN.NewralNetwork(inputData, teacherData, shape, activation='sigmoid')
 
 # 学習
 NN.learn(epoch=2000, learningRate=0.01, batchSize=1000,
@@ -36,5 +36,5 @@ NN.output()
 
 # テスト
 filename = '0912_1800'
-inputData, teacherData = loaddata('MLdata/' + filename + '.txt')
+inputData, teacherData = loaddata('data/ML/' + filename + '.csv')
 NN.test(inputData, teacherData)

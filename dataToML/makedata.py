@@ -18,15 +18,18 @@ class rtk(IntEnum):
 # データの読み込み
 filename = '0912_1800'
 
-accdata = np.loadtxt('accdata/' + filename + 'acc.csv', delimiter=',', skiprows=1, unpack=True, dtype=str)
+accdata = np.loadtxt('data/acc/' + filename + 'acc.csv', delimiter=',',
+                     skiprows=1, unpack=True, dtype=str)
 acctime = []
 for i in range(len(accdata[acc.time])):
-    acctime.append(datetime.datetime.strptime(accdata[acc.time][i], '%Y/%m/%d %H:%M:%S.%f'))
+    acctime.append(datetime.datetime.strptime(
+                        accdata[acc.time][i], '%Y/%m/%d %H:%M:%S.%f'))
 acc_x = list(accdata[acc.acc_x].astype('float32'))
 acc_y = list(accdata[acc.acc_y].astype('float32'))
 acc_z = list(accdata[acc.acc_z].astype('float32'))
 
-rtkdata = np.loadtxt('rtkdata/' + filename + 'rtk.csv', delimiter=',', skiprows=1, unpack=True, dtype=str)
+rtkdata = np.loadtxt('data/rtk/csv/' + filename + 'rtk.csv', delimiter=',',
+                     skiprows=1, unpack=True, dtype=str)
 latitude = rtkdata[rtk.latitude].astype('float32')
 longitude = rtkdata[rtk.longitude].astype('float32')
 
@@ -101,16 +104,14 @@ while i >= 0:
 
 # ファイル書き込み
 datanum = 50
-f = open('MLdata/' + filename + '.txt', mode='w')
-f.write('time[s], speed[m/s / 5], accwave_x({0})[G], accwave_y({0})[G], accwave_z({0})[G]\n'.format(datanum))
+f = open('data/ML/' + filename + '.csv', mode='w')
+f.write('time[s], speed[5m/s], accwave_x({0})[G], accwave_y({0})[G],'
+        'accwave_z({0})[G]\n'.format(datanum))
 for i in range(len(speedlist_LPF)):
     if datanum * (i + 1) > len(acc_x): break
     f.write(str(i) + ', ' + str(speedlist_LPF[i] / 5) + ', ')
-    for j in range(datanum):
-        f.write(str(acc_x[datanum*i+j] / 9.8) + ', ')
-    for j in range(datanum):
-        f.write(str(acc_y[datanum*i+j] / 9.8) + ', ')
-    for j in range(datanum):
-        f.write(str(acc_z[datanum*i+j] / 9.8) + ', ')
+    for j in range(datanum): f.write(str(acc_x[datanum*i+j] / 9.8) + ', ')
+    for j in range(datanum): f.write(str(acc_y[datanum*i+j] / 9.8) + ', ')
+    for j in range(datanum): f.write(str(acc_z[datanum*i+j] / 9.8) + ', ')
     f.write('\n')
 f.close

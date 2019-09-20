@@ -1,17 +1,13 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib import animation
 import os
 import shutil
 import time
 
 
 class NewralNetwork:
-    def __init__(self,
-                 inputData,
-                 teacherData,
-                 shape=[1, 3, 1],
-                 activation='sigmoid'):
+    def __init__(self, inputData, teacherData,
+                 shape=[1, 3, 1], activation='sigmoid'):
         self.inputData = inputData          # 入力データ
         self.teacherData = teacherData      # 教師データ
         self.outputData = None              # 出力
@@ -22,8 +18,9 @@ class NewralNetwork:
         self.layers = []
         for i in range(len(shape) - 1):
             self.layers.append(self.Affine(shape[i], shape[i+1], activation))
-            if activation == 'relu': self.layers.append(self.Relu())
-            else:                    self.layers.append(self.Sigmoid())
+            if   activation == 'relu': self.layers.append(self.Relu())
+            elif activation == 'tanh': self.layers.append(self.Tanh())
+            else:                      self.layers.append(self.Sigmoid())
         self.layers.append(self.MSE())
 
         # グラフ
@@ -36,53 +33,45 @@ class NewralNetwork:
         self.activationGraphs.append(self.fig.add_subplot(
             3, layerNum, layerNum + 1))
         self.waightGraphs.append(self.fig.add_subplot(
-            3, layerNum, layerNum * 2 + 1))
+            3, layerNum, 2*layerNum + 1))
         for i in range(1, layerNum):
             self.activationGraphs.append(self.fig.add_subplot(
                 3, layerNum, layerNum + 1 + i,
-                sharex=self.activationGraphs[0]))
+                sharex=self.activationGraphs[0],
+                sharey=self.activationGraphs[0]))
             self.waightGraphs.append(self.fig.add_subplot(
-                3, layerNum, layerNum * 2 + 1 + i,
-                sharey=self.waightGraphs[0]))
+                3, layerNum, 2*layerNum + 1 + i))
         self.fig.align_labels()
-        self.fig.subplots_adjust(left=0.1,
-                                 right=0.95,
-                                 bottom=0.05,
-                                 top=0.95,
-                                 wspace=0.2,
-                                 hspace=0.5)
+        self.fig.subplots_adjust(left=0.1, right=0.95, bottom=0.05, top=0.95,
+                                 wspace=0.2, hspace=0.5)
 
-    def learn(self,
-              epoch=1000,
-              learningRate=0.1,
-              batchSize=100,
-              optimizer='Adam',
-              momentum=0.9,
-              beta1=0.9,
-              beta2=0.999,
-              graph=False):
+    def learn(self, epoch=1000, learningRate=0.1, batchSize=100,
+              graph=False, optimizer='Adam', momentum=0.9,
+              beta1=0.9, beta2=0.999):
         # 学習開始時刻
         start = time.time()
 
         for i in range(epoch):
             # 準伝播
-            if batchSize > len(self.inputData): batchSize = len(self.inputData)
-            batchMask = np.random.choice(len(self.inputData), batchSize)
+            dataNum = len(self.inputData)
+            layerNum = len(self.layers)
+            if batchSize > dataNum: batchSize = dataNum
+            batchMask = np.random.choice(dataNum, batchSize)
             y = self.inputData[batchMask]
-            for j in range(len(self.layers) - 1):
+            for j in range(layerNum - 1):
                 y = self.layers[j].forward(y)
-                if j == len(self.layers) - 2: self.outputData = y
+                if j == layerNum - 2: self.outputData = y
             loss = self.layers[-1].forward(y, self.teacherData[batchMask])
             self.lossList.append(loss)
 
             # 逆伝播
             dy = None
-            for j in reversed(range(len(self.layers))):
-                if j == len(self.layers) - 1: dy = self.layers[j].backward()
+            for j in reversed(range(layerNum)):
+                if j == layerNum - 1: dy = self.layers[j].backward()
                 else:                         dy = self.layers[j].backward(dy)
 
             # 重み更新
-            for j in range(0, len(self.layers) - 1, 2):
+            for j in range(0, layerNum - 1, 2):
                 dy = self.layers[j].update(optimizer, learningRate,
                                            momentum, beta1, beta2)
 
@@ -110,8 +99,8 @@ class NewralNetwork:
         self.lossGraph.set_xlabel('iterations')
         self.lossGraph.set_ylabel('loss')
         self.lossGraph.set_xlim(-epoch * 0.05, epoch * 1.05)
-        self.lossGraph.set_ylim(-max(self.lossList) * 0.05,
-                                 max(self.lossList) * 1.05)
+        ylim = max(self.lossList)
+        self.lossGraph.set_ylim(-ylim * 0.05, ylim * 1.05)
         self.lossGraph.grid()
 
         # 教師データと出力
@@ -122,16 +111,21 @@ class NewralNetwork:
                                  label='output', marker='.')
         self.outputGraph.set_xlabel('datanum')
         self.outputGraph.set_ylabel('output')
+        xlim = len(self.inputData)
+        self.outputGraph.set_xlim(-xlim * 0.05, xlim * 1.05)
         self.outputGraph.grid()
         self.outputGraph.legend()
 
         # 隠れ層の出力
         for i in range(len(self.activationGraphs)):
             self.activationGraphs[i].cla()
-            data = np.reshape(self.layers[2*i+1].y, [-1, 1])
-            weights = np.ones_like(data)/float(len(data))
-            self.activationGraphs[i].hist(data, 30, weights=weights)
-            self.activationGraphs[i].set_ylim(0, 1)
+            data = np.reshape(self.layers[2*i + 1].y, [-1, 1])
+            weights = np.ones_like(data) / float(len(data))
+            if   self.activation == 'relu': histRange = None
+            elif self.activation == 'tanh': histRange = (-1, 1)
+            else:                           histRange = (0, 1)
+            self.activationGraphs[i].hist(data, 20,
+                                          weights=weights, range=histRange)
             self.activationGraphs[i].set_title('{}-layer'.format(i+1))
             self.activationGraphs[i].grid()
             if i != 0: self.activationGraphs[i].tick_params(
@@ -141,11 +135,9 @@ class NewralNetwork:
         # 重み
         for i in range(len(self.waightGraphs)):
             self.waightGraphs[i].cla()
-            data = np.reshape(self.layers[2*i].w, [-1, 1])
-            self.waightGraphs[i].scatter(range(len(data)), data)
-            self.waightGraphs[i].grid()
-            if i != 0: self.waightGraphs[i].tick_params(
-                                            left=False, labelleft=False)
+            self.waightGraphs[i].imshow(self.layers[2*i].w.T, cmap='coolwarm')
+            self.waightGraphs[i].tick_params(left=False, labelleft=False,
+                                             bottom=False, labelbottom=False)
         self.waightGraphs[0].set_ylabel('waight')
 
         # 表示
@@ -153,10 +145,11 @@ class NewralNetwork:
         plt.pause(1e-10)
 
     def test(self, inputData, teacherData):
+        layerNum = len(self.layers)
         y = inputData
-        for j in range(len(self.layers)-1):
+        for j in range(layerNum - 1):
             y = self.layers[j].forward(y)
-            if j == len(self.layers)-2:
+            if j == layerNum - 2:
                 outputData = y
 
         # グラフ表示
@@ -164,6 +157,7 @@ class NewralNetwork:
         plt.title('test')
         plt.plot(teacherData, label='theacher')
         plt.plot(outputData, label='output')
+        plt.grid()
         plt.legend()
         plt.show()
 
@@ -177,7 +171,7 @@ class NewralNetwork:
         if os.path.isdir(directory):
             shutil.rmtree(directory)
         os.mkdir(directory)
-        for i in range(0, len(self.layers)-1, 2):
+        for i in range(0, len(self.layers) - 1, 2):
             self.layers[i].output(directory, i)
 
     class Affine:
@@ -185,8 +179,8 @@ class NewralNetwork:
             # 重み
             if activation == 'relu': n = np.sqrt(2/outputnum) # Heの初期値
             else:                    n = np.sqrt(1/outputnum) # Xavierの初期値
-            self.w = np.random.randn(imputnum, outputnum) * n
-            self.b = np.random.randn(1, outputnum)        * n
+            self.w = n * np.random.randn(imputnum, outputnum).astype('float32') 
+            self.b = n * np.random.randn(1, outputnum).astype('float32') 
             
             self.x = None       # 入力
             self.dw = None      # 重みの勾配
@@ -242,9 +236,9 @@ class NewralNetwork:
                 self.b -= learningRate * self.db
 
         def output(self, directory='', i=0):
-            np.savetxt(directory + '/w' + str(int(i / 2 + 1)) + '.csv',
+            np.savetxt(directory + '/w' + str(int(i/2 + 1)) + '.csv',
                        self.w, delimiter=',')
-            np.savetxt(directory + '/b' + str(int(i / 2 + 1)) + '.csv',
+            np.savetxt(directory + '/b' + str(int(i/2 + 1)) + '.csv',
                        self.b, delimiter=',')
 
     ########## 活性化関数 ##########
@@ -278,6 +272,18 @@ class NewralNetwork:
             dx[self.mask] = 0
             return dx
 
+    class Tanh:
+        def __init__(self):
+            self.y = None
+
+        def forward(self, x):
+            self.y = np.tanh(x)
+            return self.y
+
+        def backward(self, dy):
+            ds = 1 - self.y**2
+            return ds * dy
+
     ########## 損失関数 ##########
 
     class MSE:
@@ -296,17 +302,17 @@ class NewralNetwork:
 
 if __name__ == '__main__':
     # 学習データ
-    x = np.arange(0, 6*np.pi, 0.001)
+    x = np.arange(0, 6 * np.pi, 0.001).astype('float32')
     x = x[:, np.newaxis]
     t = 0.5 * np.sin(x) + 0.5
 
     # ニューラルネットワーク構築
-    shape = [1, 3, 3, 3, 1]
-    NN = NewralNetwork(x, t, shape, activation='sigmoid')
+    shape = [1, 5, 4, 3, 1]
+    NN = NewralNetwork(x, t, shape, activation='tanh')
 
     # 学習
-    NN.learn(epoch=10000, learningRate=0.01, batchSize=1000,
-             optimizer='Adam', graph=False)
+    NN.learn(epoch=2000, learningRate=0.01, batchSize=1000,
+             optimizer='Adam', graph=True)
 
     # 重みファイル出力
     NN.output()
