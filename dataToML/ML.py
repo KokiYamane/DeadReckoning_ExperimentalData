@@ -25,7 +25,7 @@ inputData, teacherData = loaddata('data/ML/' + filename + '.csv')
 
 # ニューラルネットワーク構築
 shape = [150, 30, 10, 1]
-NN = NN.NewralNetwork(inputData, teacherData, shape, activation='sigmoid')
+NN = NN.NewralNetwork(inputData, teacherData, shape, activation='tanh')
 
 # 学習
 NN.learn(epoch=2000, learningRate=0.01, batchSize=1000,
