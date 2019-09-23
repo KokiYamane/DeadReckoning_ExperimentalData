@@ -8,11 +8,12 @@ import NeuralNetwork
     load_mnist(flatten=True, normalize=True, one_hot_label=True)
 
 # ニューラルネットワーク構築
-shape = [784, 30, 30, 30, 30, 30, 10]
-NN = NeuralNetwork.NewralNetwork(shape, batchNorm=True, activation='relu')
+shape = [784, 100, 100, 100, 100, 100, 10]
+NN = NeuralNetwork.NewralNetwork(shape, batchNorm=True, activation='tanh',
+                                 loss='CrossEntropy', dropoutRatio=0.2)
 
 # 学習
-NN.learn(x_train, t_train, epoch=2000, learningRate=0.001, batchSize=1000,
+NN.learn(x_train, t_train, epoch=3000, learningRate=0.01, batchSize=100,
          optimizer='Adam', graph=True)
 
 # テスト

@@ -7,43 +7,46 @@ import numpy as np
 
 
 class NewralNetwork:
-    def __init__(self, shape=[1, 3, 1], batchNorm=False, activation='sigmoid'):
-        self.x = None              # 入力
-        self.t = None              # 教師データ
-        self.y = None              # 出力
-        self.loss = []             # 損失関数
-        self.accuracy = []         # 正解率
-        self.epoch = None          # 学習回数
-        self.learningRate = None   # 学習率
-        self.batchSize = None      # 一度に学習するデータ数
+    def __init__(self, shape=[1, 3, 1], batchNorm=False,
+                 activation='sigmoid', dropoutRatio=0, loss='MSE'):
+        self.x = None                 # 入力
+        self.t = None                 # 教師データ
+        self.y = None                 # 出力
+        self.loss = []                # 損失関数
+        self.accuracy = []            # 正解率
+        self.epoch = None             # 学習回数
+        self.learningRate = None      # 学習率
+        self.batchSize = None         # 一度に学習するデータ数
+        self.activation = activation  # 活性化関数の種類
 
         # ニューラルネットワーク
-        self.activation = activation
         self.layers = []
-        for i in range(len(shape) - 1):
-            self.layers.append(self.Layer(shape[i], shape[i + 1],
-                                          batchNorm, activation))
-        self.layers.append(self.MSE())
+        for i in range(len(shape) - 2):
+            self.layers.append(self.Layer(shape[i], shape[i + 1], batchNorm,
+                               activation, dropoutRatio))
+        self.layers.append(
+            self.Layer.Affine(shape[i + 1], shape[i + 2], activation))
+        if loss == 'MSE':
+            self.layers.append(self.MSE())
+        elif loss == 'CrossEntropy':
+            self.layers.append(self.CrossEntropyWithSoftmax())
+        else:
+            print('loss ' + loss + ' is not defined')
+            exit()
 
         # グラフ
         self.fig = plt.figure(figsize=(10, 6))
         self.lossGraph = self.fig.add_subplot(2, 2, 1)
         self.outputGraph = self.fig.add_subplot(2, 2, 2)
         self.activationGraphs = []
-        # self.waightGraphs = []
 
-        layerNum = len(shape) - 1
+        layerNum = len(shape) - 2
         self.activationGraphs.append(self.fig.add_subplot(
             2, layerNum, layerNum + 1))
-        # self.waightGraphs.append(self.fig.add_subplot(
-        #     3, layerNum, 2*layerNum + 1))
         for i in range(1, layerNum):
             self.activationGraphs.append(self.fig.add_subplot(
                 2, layerNum, layerNum + 1 + i,
-                sharex=self.activationGraphs[0],
                 sharey=self.activationGraphs[0]))
-            # self.waightGraphs.append(self.fig.add_subplot(
-            #     3, layerNum, 2*layerNum + 1 + i))
 
         self.fig.align_labels()
         self.fig.subplots_adjust(left=0.1, right=0.95, bottom=0.05, top=0.95,
@@ -70,23 +73,24 @@ class NewralNetwork:
         for i in range(epoch):
             # ミニバッチ生成
             batchMask = np.random.choice(dataNum, batchSize)
-            y = x[batchMask]
+            self.y = x[batchMask]
 
             # 順伝播
             layerNum = len(self.layers)
             for j in range(layerNum - 1):
-                y = self.layers[j].forward(y)
-                if j == layerNum - 2:
-                    self.y = y
-            loss = self.layers[-1].forward(y, t[batchMask])
+                self.y = self.layers[j].forward(self.y)
+                # if j == layerNum - 2:
+                #     self.y = y
+            # self.y = y
+            loss = self.layers[-1].forward(self.y, t[batchMask])
 
             # 順伝播の結果保存
             self.loss.append(loss)
-            tBatch = t[batchMask]
-            if len(x[0]) > 1:
+            t_batch = t[batchMask]
+            if len(t[0]) > 1:
                 correction = []
-                for j in range(len(y)):
-                    correction.append(tBatch[j][np.argmax(y[j])])
+                for j in range(len(self.y)):
+                    correction.append(t_batch[j][np.argmax(self.y[j])])
                 self.accuracy.append(np.average(correction) * 100)
 
             # 逆伝播
@@ -107,7 +111,7 @@ class NewralNetwork:
         elapsedTime = time.time() - start
         print('learning time = {0:7.2f} [sec]'.format(elapsedTime))
 
-        if len(x[0]) ==  1:
+        if len(self.t[0]) == 1:
             # 平均誤差表示
             learningErrer = np.average(np.abs(
                 self.y - t[batchMask]))
@@ -132,7 +136,7 @@ class NewralNetwork:
         self.lossGraph.grid()
 
         # 教師データと出力
-        if len(self.x[0]) ==  1:
+        if len(self.y[0]) ==  1:
             self.outputGraph.cla()
             self.outputGraph.scatter(range(len(self.t)), self.t,
                                      label='teacher', color='gray')
@@ -140,7 +144,7 @@ class NewralNetwork:
                                      label='output', marker='.')
             self.outputGraph.set_xlabel('datanum')
             self.outputGraph.set_ylabel('output')
-            xlim = len(x)
+            xlim = len(self.x)
             self.outputGraph.set_xlim(-xlim * 0.05, xlim * 1.05)
             self.outputGraph.grid()
             self.outputGraph.legend()
@@ -160,12 +164,15 @@ class NewralNetwork:
             self.activationGraphs[i].cla()
             data = np.reshape(self.layers[i].activation.y, [-1, 1])
             weights = np.ones_like(data) / float(len(data))
-            if self.activation == 'relu':
+            if self.activation == 'sigmoid':
+                histRange = (0, 1)
+            elif self.activation == 'relu':
                 histRange = None
             elif self.activation == 'tanh':
                 histRange = (-1, 1)
             else:
-                histRange = (0, 1)
+                print('activation ' + activation + ' is not defined')
+                exit()
             self.activationGraphs[i].hist(data, 20,
                                           weights=weights, range=histRange)
             self.activationGraphs[i].set_title('{}-layer'.format(i+1))
@@ -175,15 +182,6 @@ class NewralNetwork:
                     left=False, labelleft=False)
         self.activationGraphs[0].set_ylabel('activation')
 
-        # 重み
-        # for i in range(len(self.waightGraphs)):
-        #     self.waightGraphs[i].cla()
-        #     im = self.waightGraphs[i].imshow(
-        #         self.layers[i].affine.w.T, cmap='gray')
-        #     self.waightGraphs[i].tick_params(left=False, labelleft=False,
-        #                                      bottom=False, labelbottom=False)
-        # self.waightGraphs[0].set_ylabel('waight')
-        
         # 表示
         plt.draw()
         plt.pause(1e-7)
@@ -192,10 +190,11 @@ class NewralNetwork:
         # 順伝播
         layerNum = len(self.layers)
         y = x
-        for j in range(layerNum - 1):
-            y = self.layers[j].forward(y)
+        for j in range(layerNum - 2):
+            y = self.layers[j].forward(y, trainFlag=True)
+        y = self.layers[j + 1].forward(y)
 
-        if len(x[0]) ==  1:
+        if len(t[0]) ==  1:
             # グラフ表示
             plt.figure()
             plt.title('test')
@@ -230,26 +229,33 @@ class NewralNetwork:
             self.layers[i].output(directory, i)
 
     class Layer:
-        def __init__(self, inputNum, outputNum, batchNorm, activation):
+        def __init__(self, inputNum, outputNum, batchNorm,
+                     activation, dropoutRatio):
             self.affine = self.Affine(inputNum, outputNum, activation)
             self.batchNormFlag = batchNorm
             if self.batchNormFlag == True:
                 self.batchNorm = self.BatchNorm()
-            if activation == 'relu':
+            if activation == 'sigmoid':
+                self.activation = self.Sigmoid()
+            elif activation == 'relu':
                 self.activation = self.Relu()
             elif activation == 'tanh':
                 self.activation = self.Tanh()
             else:
-                self.activation = self.Sigmoid()
+                print('activation ' + activation + ' is not defined')
+                exit()
+            self.dropout = self.Dropout(dropoutRatio)
 
-        def forward(self, x):
+        def forward(self, x, trainFlag=True):
             y = self.affine.forward(x)
             if self.batchNormFlag == True:
                 y = self.batchNorm.forward(y)
             y = self.activation.forward(y)
+            y = self.dropout.forward(y, trainFlag)
             return y
 
         def backward(self, dy):
+            dy = self.dropout.backward(dy)
             dy = self.activation.backward(dy)
             if self.batchNormFlag == True:
                 dy = self.batchNorm.backward(dy)
@@ -305,7 +311,11 @@ class NewralNetwork:
                 return np.dot(dy, self.w.T)
 
             def update(self, learningRate, optimizer, momentum, beta1, beta2):
-                if optimizer == 'momentum':
+                if optimizer == 'SGD':
+                    self.w -= learningRate * self.dw
+                    self.b -= learningRate * self.db
+
+                elif optimizer == 'momentum':
                     self.vw = momentum * self.vw - learningRate * self.dw
                     self.vb = momentum * self.vb - learningRate * self.db
                     self.w += self.vw
@@ -327,9 +337,9 @@ class NewralNetwork:
                     self.b -= learningRate * self.mb / \
                         (np.sqrt(self.vb) + 1e-7)
 
-                else:   # SGD
-                    self.w -= learningRate * self.dw
-                    self.b -= learningRate * self.db
+                else:
+                    print('optimizer ' + optimizer + ' is not defined')
+                    exit()
 
             def output(self, directory='', i=0):
                 np.savetxt(directory + '/w' + str(int(i/2 + 1)) + '.csv',
@@ -383,6 +393,22 @@ class NewralNetwork:
                 np.savetxt(directory + '/beta' + str(int(i/2 + 1)) + '.csv',
                            self.beta, delimiter=',')
 
+        class Dropout:
+            def __init__(self, dropoutRatio=0):
+                self.dropoutRatio = dropoutRatio
+                self.mask = None
+
+            def forward(self, x, trainFlag=True):
+                if trainFlag == True:
+                    self.mask = np.random.rand(*x.shape) > self.dropoutRatio
+                    return x * self.mask
+                else:
+                    return x * (1 - self.dropoutRatio)
+
+            def backward(self, dy):
+                return dy * self.mask
+
+
         ########## 活性化関数 ##########
 
         class Sigmoid:
@@ -430,16 +456,39 @@ class NewralNetwork:
 
     class MSE:
         def __init__(self):
-            self.x = None
+            self.y = None
             self.t = None
 
-        def forward(self, x, t):
-            self.x = x
+        def forward(self, y, t):
+            self.y = y
             self.t = t
-            return 0.5 * np.average((x - self.t) ** 2)
+            return 0.5 * np.average((y - self.t) ** 2)
 
         def backward(self):
-            return self.x - self.t
+            batchSize = self.y.shape[0]
+            return (self.y - self.t) / batchSize
+
+    class CrossEntropyWithSoftmax:
+        def __init__(self):
+            self.y = None
+            self.t = None
+
+        def forward(self, y, t):
+            self.y = y
+            self.t = t
+
+            # softmax
+            exp_y = np.exp(y - np.max(y))
+            y = exp_y / sum(exp_y)
+
+            y = y.reshape(1, y.size)
+            t = t.reshape(1, t.size)
+            batchSize = y.shape[0]
+            return -np.sum(t * np.log(y + 1e-7)) / batchSize
+
+        def backward(self):
+            batchSize = self.y.shape[0]
+            return (self.y - self.t) / batchSize
 
 
 if __name__ == '__main__':
@@ -449,13 +498,15 @@ if __name__ == '__main__':
     t = 0.5 * np.sin(x) + 0.5
 
     # ニューラルネットワーク構築
-    shape = [1, 7, 6, 5, 4, 3, 1]
-    NN = NewralNetwork(shape, batchNorm=False, activation='tanh')
+    shape = [1, 3, 3, 3, 3, 3, 1]
+    NN = NewralNetwork(shape, batchNorm=True,
+                       activation='relu', dropoutRatio=0.5)
 
     # 学習
-    NN.learn(x, t, epoch=2000, learningRate=0.01, batchSize=1000,
+    NN.learn(x, t, epoch=2000, learningRate=0.001, batchSize=1000,
              graph=True, optimizer='Adam')
 
+    # テスト
     NN.test(x, t)
 
     # 重みファイル出力

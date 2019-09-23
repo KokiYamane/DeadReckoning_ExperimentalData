@@ -24,11 +24,11 @@ x, t = loaddata('data/ML/' + filename + '.csv')
 
 # ニューラルネットワーク構築
 shape = [150, 30, 10, 1]
-NN = NN.NewralNetwork(x, t, shape, batchNorm=False, activation='sigmoid')
+NN = NN.NewralNetwork(shape, batchNorm=True, activation='tanh')
 
 # 学習
-NN.learn(epoch=2000, learningRate=0.01, batchSize=1000,
-         optimizer='Adam', graph=True)
+NN.learn(x, t, epoch=2000, learningRate=0.01, batchSize=100,
+         optimizer='SGD', graph=True)
 
 # 重みファイル出力
 NN.output(directory='param')
