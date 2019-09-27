@@ -20,7 +20,7 @@ class rtk(IntEnum):
 
 
 # データの読み込み
-filename = '0912_1800'
+filename = '0912_1815'
 
 accdata = np.loadtxt('data/acc/' + filename + 'acc.csv', delimiter=',',
                      skiprows=1, unpack=True, dtype=str)
@@ -110,7 +110,7 @@ while i >= 0:
     i -= 1
 
 # ファイル書き込み
-datanum = 50
+datanum = 75
 f = open('data/ML/' + filename + '.csv', mode='w')
 f.write('time[s], speed[5m/s], accwave_x({0})[G], accwave_y({0})[G],'
         'accwave_z({0})[G]\n'.format(datanum))

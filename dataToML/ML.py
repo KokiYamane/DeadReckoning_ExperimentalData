@@ -11,7 +11,7 @@ def loaddata(filename):
     xyzwave = []
     for row in data:
         speed.append(row[1].astype('f8'))
-        xyzwave.append(row[2: 152].astype('f8'))
+        xyzwave.append(row[2: 2 + 3 * 75].astype('f8'))
     speed = np.array(speed)
     teacherData = speed[:, np.newaxis]
     inputData = np.array(xyzwave)
@@ -19,21 +19,21 @@ def loaddata(filename):
 
 
 # データの読み込み
-filename = '0912_1815'
+filename = '0925'
 x, t = loaddata('data/ML/' + filename + '.csv')
 
 # ニューラルネットワーク構築
-shape = [150, 30, 10, 1]
+shape = [3 * 75, 30, 10, 1]
 NN = NN.NewralNetwork(shape, batchNorm=True, activation='tanh')
 
 # 学習
-NN.learn(x, t, epoch=2000, learningRate=0.01, batchSize=100,
-         optimizer='SGD', graph=True)
+NN.learn(x, t, epoch=5000, learningRate=0.1, batchSize=1000,
+         optimizer='Adam', graph=True)
 
 # 重みファイル出力
 NN.output(directory='param')
 
 # テスト
-filename = '0912_1800'
+filename = '0912_1815'
 inputData, teacherData = loaddata('data/ML/' + filename + '.csv')
 NN.test(inputData, teacherData)

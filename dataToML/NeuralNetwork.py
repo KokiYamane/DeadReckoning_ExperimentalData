@@ -132,7 +132,7 @@ class NewralNetwork:
         self.lossGraph.set_ylabel('loss')
         self.lossGraph.set_xlim(-self.epoch * 0.05, self.epoch * 1.05)
         ylim = max(self.loss)
-        self.lossGraph.set_ylim(0, ylim * 1.05)
+        self.lossGraph.set_ylim(-ylim * 0.05, ylim * 1.05)
         self.lossGraph.grid()
 
         # 教師データと出力
