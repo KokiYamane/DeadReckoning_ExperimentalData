@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-class NewralNetwork:
+class NeuralNetwork:
     def __init__(self, shape=[1, 3, 1], batchNorm=False,
                  activation='sigmoid', dropoutRatio=0, loss='MSE'):
         self.x = None                 # 入力
@@ -79,9 +79,6 @@ class NewralNetwork:
             layerNum = len(self.layers)
             for j in range(layerNum - 1):
                 self.y = self.layers[j].forward(self.y)
-                # if j == layerNum - 2:
-                #     self.y = y
-            # self.y = y
             loss = self.layers[-1].forward(self.y, t[batchMask])
 
             # 順伝播の結果保存
@@ -197,9 +194,10 @@ class NewralNetwork:
         if len(t[0]) ==  1:
             # グラフ表示
             plt.figure()
-            plt.title('test')
-            plt.plot(t, label='theacher')
-            plt.plot(y, label='output')
+            plt.scatter(range(len(t)), t, label='theacher', color='gray')
+            plt.scatter(range(len(y)), y, label='output', marker='.')
+            plt.xlabel('datanum')
+            plt.ylabel('output')
             plt.grid()
             plt.legend()
             plt.show()
@@ -493,17 +491,17 @@ class NewralNetwork:
 
 if __name__ == '__main__':
     # 学習データ
-    x = np.arange(0, 12 * np.pi, 0.001).astype('f8')
+    x = np.arange(-5, 5, 0.001).astype('f8')
     x = x[:, np.newaxis]
-    t = 0.5 * np.sin(x) + 0.5
+    t = np.sin(x)
 
     # ニューラルネットワーク構築
-    shape = [1, 3, 3, 3, 3, 3, 1]
-    NN = NewralNetwork(shape, batchNorm=True,
-                       activation='relu', dropoutRatio=0.5)
+    shape = [1, 3, 1]
+    NN = NeuralNetwork(shape, batchNorm=True,
+                       activation='tanh', dropoutRatio=0)
 
     # 学習
-    NN.learn(x, t, epoch=2000, learningRate=0.001, batchSize=1000,
+    NN.learn(x, t, epoch=1000, learningRate=0.1, batchSize=100,
              graph=True, optimizer='Adam')
 
     # テスト

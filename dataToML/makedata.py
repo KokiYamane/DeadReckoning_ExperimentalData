@@ -110,14 +110,14 @@ while i >= 0:
     i -= 1
 
 # ファイル書き込み
-datanum = 75
+datanum = 50
 f = open('data/ML/' + filename + '.csv', mode='w')
-f.write('time[s], speed[5m/s], accwave_x({0})[G], accwave_y({0})[G],'
+f.write('time[s], speed[m/s], accwave_x({0})[G], accwave_y({0})[G],'
         'accwave_z({0})[G]\n'.format(datanum))
 for i in range(len(speedlist_LPF)):
     if datanum * (i + 1) > len(acc_x):
         break
-    f.write(str(i) + ', ' + str(speedlist_LPF[i] / 5) + ', ')
+    f.write(str(i) + ', ' + str(speedlist_LPF[i]) + ', ')
     for j in range(datanum):
         f.write(str(acc_x[datanum*i+j] / 9.8) + ', ')
     for j in range(datanum):

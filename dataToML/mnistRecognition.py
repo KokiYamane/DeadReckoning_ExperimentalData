@@ -9,7 +9,7 @@ import NeuralNetwork
 
 # ニューラルネットワーク構築
 shape = [784, 100, 100, 100, 100, 100, 10]
-NN = NeuralNetwork.NewralNetwork(shape, batchNorm=True, activation='tanh',
+NN = NeuralNetwork.NeuralNetwork(shape, batchNorm=True, activation='tanh',
                                  loss='CrossEntropy', dropoutRatio=0.2)
 
 # 学習
