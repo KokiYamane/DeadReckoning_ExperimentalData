@@ -2,9 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # 日本語フォント設定
-from matplotlib import rcParams
-rcParams["font.family"] = "sans-serif"
-rcParams["font.sans-serif"] = ["Yu Gothic"]
+plt.rcParams['font.family'] = ['Yu Gothic', 'Corporate Logo Medium']
 
 # データの項目
 from enum import IntEnum, auto
@@ -48,7 +46,7 @@ def LPF(list):
 
 # データの読み込み
 filename = "turnTable2"
-data = np.loadtxt("data/" + filename + ".txt", delimiter=",", skiprows=2, unpack=True) 
+data = np.loadtxt("data/" + filename + ".csv", delimiter=",", skiprows=2, unpack=True) 
 
 # 角度理想値
 expected = (data[item.time]+25)*6.12%360-180
@@ -158,4 +156,4 @@ graph3.annotate("地磁気",
 # 画像出力
 fig.savefig("graph/rad/" + filename + ".png")
 
-# plt.show()
+plt.show()

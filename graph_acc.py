@@ -2,9 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # 日本語フォント設定
-from matplotlib import rcParams
-rcParams["font.family"] = "sans-serif"
-rcParams["font.sans-serif"] = ["Yu Gothic"]
+plt.rcParams['font.family'] = ['Yu Gothic', 'Corporate Logo Medium']
 
 # データの項目
 from enum import IntEnum, auto
@@ -47,7 +45,7 @@ def LPF(list):
     return list_LPF
 
 # データの読み込み
-filename = "0716acc"
+filename = "turnTable2"
 data = np.loadtxt("data/" + filename + ".csv", delimiter=",", skiprows=2, unpack=True) 
 
 # グラフ作成
@@ -58,25 +56,25 @@ graph2 = fig.add_subplot(312)
 graph3 = fig.add_subplot(313)
 
 graph1.plot(data[item.time], data[item.acc_x], color="black")
-# graph1.plot(data[item.time], LPF(data[item.acc_x]))
+graph1.plot(data[item.time], LPF(data[item.acc_x]))
 graph2.plot(data[item.time], data[item.acc_y], color="black")
-# graph2.plot(data[item.time], LPF(data[item.acc_y]))
+graph2.plot(data[item.time], LPF(data[item.acc_y]))
 graph3.plot(data[item.time], data[item.acc_z], color="black")
-# graph3.plot(data[item.time], LPF(data[item.acc_z]))
+graph3.plot(data[item.time], LPF(data[item.acc_z]))
 
 # 値の範囲
-xmin = 500
-xmax = xmin + 1.5
-ymin = -15
-ymax = -ymin
+# xmin = 500
+# xmax = xmin + 1.5
+# ymin = -15
+# ymax = -ymin
 
-graph1.set_xlim(xmin,xmax)
-graph2.set_xlim(xmin,xmax)
-graph3.set_xlim(xmin,xmax)
+# graph1.set_xlim(xmin,xmax)
+# graph2.set_xlim(xmin,xmax)
+# graph3.set_xlim(xmin,xmax)
 
-graph1.set_ylim(ymin,ymax)
-graph2.set_ylim(ymin,ymax)
-graph3.set_ylim(ymin,ymax)
+# graph1.set_ylim(ymin,ymax)
+# graph2.set_ylim(ymin,ymax)
+# graph3.set_ylim(ymin,ymax)
 
 # ラベル
 graph1.tick_params(labelbottom=False, bottom=False)
@@ -94,4 +92,4 @@ graph3.grid()
 
 fig.savefig("graph/acc/" + filename + ".png")
 
-# plt.show()
+plt.show()
