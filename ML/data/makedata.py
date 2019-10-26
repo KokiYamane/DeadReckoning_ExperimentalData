@@ -1,8 +1,10 @@
+import copy
 import datetime
 from enum import IntEnum, auto
 
 import matplotlib.pyplot as plt
 import numpy as np
+
 
 # データの項目
 class acc(IntEnum):
@@ -29,6 +31,9 @@ class rtk(IntEnum):
 def deg2rad(x):
     return x * np.pi/180
 
+def rad2deg(x):
+    return x * 180/np.pi
+
 
 def calcDistance(latitude1, longitude1, latitude2, longitude2):
     GRS80_A = 6378137.000  # 長半径 a(m)
@@ -51,7 +56,9 @@ def calcDistance(latitude1, longitude1, latitude2, longitude2):
 
     deltaX = n * np.cos(my) * deltaLongitude
     deltaY = m * deltaLatitude
-    return (deltaX**2 + deltaY**2)**0.5
+    distance = (deltaX ** 2 + deltaY ** 2) ** 0.5
+    angle = np.arctan2(deltaY, deltaX)
+    return distance, angle
 
 
 def timeSub(time1, time2):
@@ -61,25 +68,34 @@ def timeSub(time1, time2):
 def loadAccData(filename):
     accdata = np.loadtxt(filename, delimiter=',', skiprows=1,
                          unpack=True, dtype=str)
+
     acctime = []
     for i in range(len(accdata[acc.time])):
         acctime.append(datetime.datetime.strptime(
             accdata[acc.time][i], '%Y/%m/%d %H:%M:%S.%f'))
     accdict = {}
-    accdict['time'] = list(acctime)
+    accdict['time'] = acctime
+
+    # accdict['acc'] = []
     accdict['acc_x'] = list(accdata[acc.acc_x].astype('f8'))
     accdict['acc_y'] = list(accdata[acc.acc_y].astype('f8'))
     accdict['acc_z'] = list(accdata[acc.acc_z].astype('f8'))
+
+    # accdict['gyro'] = []
     accdict['gyro_x'] = list(accdata[acc.gyro_x].astype('f8'))
     accdict['gyro_y'] = list(accdata[acc.gyro_y].astype('f8'))
     accdict['gyro_z'] = list(accdata[acc.gyro_z].astype('f8'))
+
+    # accdict['mag'] = []
     accdict['angle_x'] = list(accdata[acc.angle_x].astype('f8'))
     accdict['angle_y'] = list(accdata[acc.angle_y].astype('f8'))
     accdict['angle_z'] = list(accdata[acc.angle_z].astype('f8'))
+
     accdict['step'] = list(accdata[acc.step].astype('f8'))
     accdict['stepflag'] = [0]
     for i in range(1, len(accdict['step'])):
         accdict['stepflag'].append(accdict['step'][i] - accdict['step'][i-1])
+
     return accdict
 
 
@@ -91,6 +107,7 @@ def loadRTKData(filename):
     rtkdict = {}
     rtkdict['time'] = []
     rtkdict['speed'] = []
+    rtkdict['angle'] = []
     for i in range(len(rtkdata[rtk.date])):
         # 時刻
         time = rtkdata[rtk.date][i] + ' ' + rtkdata[rtk.time][i]
@@ -98,87 +115,107 @@ def loadRTKData(filename):
         time += datetime.timedelta(hours=9)
         time -= datetime.timedelta(seconds=18)
         if i == 0:
-            rtkdict['starttime'] = time
+            starttime = time
             continue
         rtkdict['time'].append(time)
 
         # 速度算出
         if i == 1:
-            elapsedTime = timeSub(rtkdict['time'][i-1], rtkdict['starttime'])
+            elapsedTime = timeSub(rtkdict['time'][i-1], starttime)
         else:
-            elapsedTime = timeSub(rtkdict['time'][i-1], rtkdict['time'][i-2])
-        speed = calcDistance(latitude[i-1], longitude[i-1],
-                             latitude[i],   longitude[i]) / elapsedTime
+            elapsedTime = timeSub(rtkdict['time'][i - 1], rtkdict['time'][i - 2])
+        distance, angle = calcDistance(latitude[i-1], longitude[i-1],
+                                       latitude[i],   longitude[i]) 
+        speed = distance / elapsedTime
         rtkdict['speed'].append(speed)
+        rtkdict['angle'].append(angle)
     return rtkdict
 
 
-# データの読み込み
+# 外れ値削除
+def outlierRemoval(time, data, threshold):
+    i = len(time) - 1
+    while i >= 0:
+        if data[i] > threshold:
+            del time[i]
+            del data[i]
+        i -= 1
+
+
+# 線形補完
+def linearInterpolation(time, data, cycle):
+    i = len(time) - 1
+    while i >= 0:
+        timediff = timeSub(time[i], time[i-1])
+        if timediff > cycle:
+            nowtime = time[i] - datetime.timedelta(seconds=cycle)
+            time.insert(i, nowtime)
+            speeddiff = data[i] - data[i-1]
+            nowacc = speeddiff / timediff
+            nowspeed = data[i] - nowacc * (timediff-0.2)
+            data.insert(i, nowspeed)
+        else:
+            i -= 1
+
+
+# 5[Hz] から 1[Hz] に
+def change1Hz(time, data, freq):
+    time_1Hz = []
+    data_1Hz = []
+    for i in range(int(len(time) / freq)):
+        time_1Hz.append(time[freq*(i+1)-1])
+        data_1Hz.append(np.average(data[freq*i:freq*(i+1)]))
+    return time_1Hz, data_1Hz
+
+
+# ローパスフィルタ（移動平均）
+def LPF(input, num=5):
+    coefficient = np.ones(num) / num
+    output = np.convolve(input, coefficient, mode='same')  # 移動平均
+    return output
+
+
 # filename = '0912_1800'
 # filename = '0912_1815'
 # filename = '0925'
 filename = '1010'
 
+# データの読み込み
 accdata = loadAccData('acc/' + filename + 'acc.csv')
 rtkdata = loadRTKData('rtk/csv/' + filename + 'rtk.csv')
+speed = {}
+speed['time'] = copy.copy(rtkdata['time'])
+speed['speed'] = copy.copy(rtkdata['speed'])
 
-# 外れ値削除
-threshold = 3
-i = len(rtkdata['speed'])-1
-while i >= 0:
-    if rtkdata['speed'][i] > threshold:
-        del rtkdata['time'][i]
-        del rtkdata['speed'][i]
-    i -= 1
-
-# 線形補完
-i = len(rtkdata['speed'])-1
-while i >= 0:
-    timediff = timeSub(rtkdata['time'][i], rtkdata['time'][i-1])
-    if timediff > 0.2:
-        nowtime = rtkdata['time'][i] - datetime.timedelta(seconds=1)
-        rtkdata['time'].insert(i, nowtime)
-        speeddiff = rtkdata['speed'][i] - rtkdata['speed'][i-1]
-        nowacc = speeddiff / timediff
-        nowspeed = rtkdata['speed'][i] - nowacc * (timediff-0.2)
-        rtkdata['speed'].insert(i, nowspeed)
-    else:
-        i -= 1
-
-# 5[Hz] から 1[Hz] に
-speedlist = []
-frequency = 5  # [Hz]
-for i in range(int(len(rtkdata['speed']) / frequency)):
-    if i < frequency:
-        speedlist.append(0.0)
-        continue
-    partialSum = 0
-    for j in range(frequency):
-        partialSum += rtkdata['speed'][frequency*i-j]
-    average = partialSum / frequency
-    speedlist.append(average)
+# データ整形
+outlierRemoval(speed['time'], speed['speed'], threshold=3.0)
+linearInterpolation(speed['time'], speed['speed'], cycle=0.2)
+speed_1Hz = {}
+speed_1Hz['time'], speed_1Hz['speed'] = \
+    change1Hz(speed['time'], speed['speed'], freq=5)
 
 # 加速度データの不要な部分削除
+starttime = speed_1Hz['time'][0] - datetime.timedelta(seconds=1)
 i = len(accdata['time'])-1
 while i >= 0:
-    if accdata['time'][i] < rtkdata['starttime']:
+    if accdata['time'][i] < starttime or \
+       accdata['time'][i] > rtkdata['time'][-1]:
         for col in accdata.values():
             del col[i]
     i -= 1
 
 print(accdata['time'][0])
-print(rtkdata['starttime'])
-print(rtkdata['time'][0])
+print(speed_1Hz['time'][0])
 
 # ファイル書き込み
 datanum = 50
 f = open('ML/' + filename + '.csv', mode='w')
 f.write('time[s], speed[m/s], accwave_x({0})[G], accwave_y({0})[G],'
         'accwave_z({0})[G]\n'.format(datanum))
-for i in range(len(speedlist)):
+for i in range(len(speed_1Hz['speed'])):
     if datanum * (i + 1) > len(accdata['time']):
         break
-    f.write(str(i) + ', ' + str(speedlist[i]) + ', ')
+    f.write(str(i) + ', ' + str(speed_1Hz['speed'][i]) + ', ')
     for j in range(datanum):
         f.write(str(accdata['acc_x'][datanum*i+j] / 9.8) + ', ')
     for j in range(datanum):
@@ -188,16 +225,80 @@ for i in range(len(speedlist)):
     f.write('\n')
 f.close
 
+# 時系列処理
+gyro = []
+gyro.append(accdata['gyro_x'])
+gyro.append(accdata['gyro_y'])
+gyro.append(accdata['gyro_z'])
+angleByGyro = []
+angleByGyro.append(list([-160]))
+angleByGyro.append(list([rtkdata['angle'][0]]))
+angleByGyro.append(list([rtkdata['angle'][0]]))
+Xlist = [0.0]
+Ylist = [0.0]
+for i in range(1, len(accdata['gyro_x'])):
+    for j in range(3):
+        angle = angleByGyro[j][i-1] - gyro[j][i]
+        if angle > 180:
+            angle -= 360
+        elif angle < -180:
+            angle += 360
+        angleByGyro[j].append(angle)
+
+    if accdata['stepflag'][i] > 0:
+        stride = 0.5
+        Xlist.append(Xlist[-1] + stride * np.cos(accdata['angle_z'][i]))
+        Ylist.append(Ylist[-1] + stride * np.sin(accdata['angle_z'][i]))
+
+# 微分
+def differential(time, data):
+    output = [0.0]
+    for i in range(1, len(time)):
+        timeDiff = timeSub(time[i], time[i-1])
+        angleDiff = data[i] - data[i-1]
+        if angleDiff > 180:
+            angleDiff -= 360
+        elif angleDiff < -180:
+            angleDiff += 360
+        output.append(angleDiff / timeDiff)
+    return output
+
 # グラフ表示
-i = 1100
-renge = 50
+fig = plt.figure(figsize=(8, 8))
+
+# 加速度
+graph1 = fig.add_subplot(311)
 acc_x = list(map(lambda x: x / 9.8, accdata['acc_x']))
 acc_y = list(map(lambda x: x / 9.8, accdata['acc_y']))
 acc_z = list(map(lambda x: x / 9.8, accdata['acc_z']))
-plt.plot(accdata['time'], accdata['stepflag'], marker='.')
-plt.plot(accdata['time'], acc_x, marker='.')
-plt.plot(accdata['time'], acc_y, marker='.')
-plt.plot(accdata['time'], acc_z, marker='.')
-plt.plot(rtkdata['time'], rtkdata['speed'], marker='.')
-plt.grid()
+graph1.plot(accdata['time'], accdata['stepflag'], marker='.')
+graph1.plot(accdata['time'], acc_x, marker='.', label='acc_x')
+graph1.plot(accdata['time'], acc_y, marker='.', label='acc_y')
+graph1.plot(accdata['time'], acc_z, marker='.', label='acc_z')
+graph1.plot(speed['time'], speed['speed'], marker='.', label='speed')
+graph1.plot(speed_1Hz['time'], speed_1Hz['speed'], marker='.', label='speed_1Hz')
+acc = differential(speed_1Hz['time'], speed_1Hz['speed'])
+graph1.plot(speed_1Hz['time'], acc, marker='.', label='acc_rtk')
+graph1.grid()
+graph1.legend()
+
+# 角度
+graph2 = fig.add_subplot(312)
+rtkangle = list(map(rad2deg, rtkdata['angle']))
+mag = list(map(rad2deg, accdata['angle_z']))
+graph2.plot(rtkdata['time'], rtkangle, label='rtk')
+graph2.plot(accdata['time'], LPF(mag, 10), label='mag', alpha=0.7)
+graph2.plot(accdata['time'], LPF(angleByGyro[0], 10), label='gyro', alpha=0.7)
+graph2.grid()
+graph2.legend()
+
+graph3 = fig.add_subplot(313)
+graph3.plot(rtkdata['time'], differential(rtkdata['time'], rtkangle), label='rtk')
+dmag = differential(accdata['time'], mag)
+graph3.plot(accdata['time'], LPF(dmag, 10), label='mag', alpha=0.7)
+gyro = list(map(rad2deg, accdata['gyro_x']))
+graph3.plot(accdata['time'], LPF(gyro, 10), label='gyro', alpha=0.7)
+graph3.grid()
+graph3.legend()
+
 plt.show()
