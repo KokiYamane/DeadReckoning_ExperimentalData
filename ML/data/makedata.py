@@ -87,9 +87,9 @@ def loadAccData(filename):
     accdict['gyro_z'] = list(accdata[acc.gyro_z].astype('f8'))
 
     # accdict['mag'] = []
-    accdict['angle_x'] = list(accdata[acc.angle_x].astype('f8'))
-    accdict['angle_y'] = list(accdata[acc.angle_y].astype('f8'))
-    accdict['angle_z'] = list(accdata[acc.angle_z].astype('f8'))
+    accdict['mag_x'] = list(accdata[acc.angle_x].astype('f8'))
+    accdict['mag_y'] = list(accdata[acc.angle_y].astype('f8'))
+    accdict['mag_z'] = list(accdata[acc.angle_z].astype('f8'))
 
     accdict['step'] = list(accdata[acc.step].astype('f8'))
     accdict['stepflag'] = [0]
@@ -123,7 +123,7 @@ def loadRTKData(filename):
         if i == 1:
             elapsedTime = timeSub(rtkdict['time'][i-1], starttime)
         else:
-            elapsedTime = timeSub(rtkdict['time'][i - 1], rtkdict['time'][i - 2])
+            elapsedTime = timeSub(rtkdict['time'][i-1], rtkdict['time'][i-2])
         distance, angle = calcDistance(latitude[i-1], longitude[i-1],
                                        latitude[i],   longitude[i]) 
         speed = distance / elapsedTime
@@ -181,8 +181,8 @@ def LPF(input, num=5):
 filename = '1010'
 
 # データの読み込み
-accdata = loadAccData('acc/' + filename + 'acc.csv')
-rtkdata = loadRTKData('rtk/csv/' + filename + 'rtk.csv')
+accdata = loadAccData('data/acc/' + filename + 'acc.csv')
+rtkdata = loadRTKData('data/rtk/csv/' + filename + 'rtk.csv')
 speed = {}
 speed['time'] = copy.copy(rtkdata['time'])
 speed['speed'] = copy.copy(rtkdata['speed'])
@@ -209,11 +209,11 @@ print(speed_1Hz['time'][0])
 
 # ファイル書き込み
 datanum = 50
-f = open('ML/' + filename + '.csv', mode='w')
+f = open('data/ML/' + filename + '.csv', mode='w')
 f.write('time[s], speed[m/s], accwave_x({0})[G], accwave_y({0})[G],'
         'accwave_z({0})[G]\n'.format(datanum))
 for i in range(len(speed_1Hz['speed'])):
-    if datanum * (i + 1) > len(accdata['time']):
+    if datanum * (i+1) > len(accdata['time']):
         break
     f.write(str(i) + ', ' + str(speed_1Hz['speed'][i]) + ', ')
     for j in range(datanum):
@@ -225,15 +225,29 @@ for i in range(len(speed_1Hz['speed'])):
     f.write('\n')
 f.close
 
+datanum = 50
+f = open('data/ML_angle/' + filename + '.csv', mode='w')
+f.write('time[s], angle[deg], gyro_x({0})[G], mag_z({0})[G]\n'.format(datanum))
+for i in range(len(rtkdata['angle'])):
+    if datanum * (i+1) > len(accdata['time']):
+        break
+    f.write(str(i) + ', ' + str(rtkdata['angle'][i]) + ', ')
+    for j in range(datanum):
+        f.write(str(accdata['gyro_x'][10*i+j] / 9.8) + ', ')
+    for j in range(datanum):
+        f.write(str(accdata['mag_z'][10*i+j] / 9.8) + ', ')
+    f.write('\n')
+f.close
+
 # 時系列処理
 gyro = []
 gyro.append(accdata['gyro_x'])
 gyro.append(accdata['gyro_y'])
 gyro.append(accdata['gyro_z'])
 angleByGyro = []
-angleByGyro.append(list([-160]))
-angleByGyro.append(list([rtkdata['angle'][0]]))
-angleByGyro.append(list([rtkdata['angle'][0]]))
+angleByGyro.append([0.0])
+angleByGyro.append([0.0])
+angleByGyro.append([0.0])
 Xlist = [0.0]
 Ylist = [0.0]
 for i in range(1, len(accdata['gyro_x'])):
@@ -247,8 +261,8 @@ for i in range(1, len(accdata['gyro_x'])):
 
     if accdata['stepflag'][i] > 0:
         stride = 0.5
-        Xlist.append(Xlist[-1] + stride * np.cos(accdata['angle_z'][i]))
-        Ylist.append(Ylist[-1] + stride * np.sin(accdata['angle_z'][i]))
+        Xlist.append(Xlist[-1] + stride * np.cos(accdata['mag_z'][i]))
+        Ylist.append(Ylist[-1] + stride * np.sin(accdata['mag_z'][i]))
 
 # 微分
 def differential(time, data):
@@ -276,16 +290,17 @@ graph1.plot(accdata['time'], acc_x, marker='.', label='acc_x')
 graph1.plot(accdata['time'], acc_y, marker='.', label='acc_y')
 graph1.plot(accdata['time'], acc_z, marker='.', label='acc_z')
 graph1.plot(speed['time'], speed['speed'], marker='.', label='speed')
-graph1.plot(speed_1Hz['time'], speed_1Hz['speed'], marker='.', label='speed_1Hz')
-acc = differential(speed_1Hz['time'], speed_1Hz['speed'])
-graph1.plot(speed_1Hz['time'], acc, marker='.', label='acc_rtk')
+graph1.plot(speed_1Hz['time'], speed_1Hz['speed'],
+            marker='.', label='speed_1Hz')
+acc = differential(speed['time'], speed['speed'])
+graph1.plot(speed['time'], acc, marker='.', label='acc_rtk')
 graph1.grid()
 graph1.legend()
 
 # 角度
 graph2 = fig.add_subplot(312)
 rtkangle = list(map(rad2deg, rtkdata['angle']))
-mag = list(map(rad2deg, accdata['angle_z']))
+mag = list(map(rad2deg, accdata['mag_z']))
 graph2.plot(rtkdata['time'], rtkangle, label='rtk')
 graph2.plot(accdata['time'], LPF(mag, 10), label='mag', alpha=0.7)
 graph2.plot(accdata['time'], LPF(angleByGyro[0], 10), label='gyro', alpha=0.7)
@@ -293,7 +308,8 @@ graph2.grid()
 graph2.legend()
 
 graph3 = fig.add_subplot(313)
-graph3.plot(rtkdata['time'], differential(rtkdata['time'], rtkangle), label='rtk')
+drtkangle = differential(rtkdata['time'], rtkangle)
+graph3.plot(rtkdata['time'], drtkangle, label='rtk')
 dmag = differential(accdata['time'], mag)
 graph3.plot(accdata['time'], LPF(dmag, 10), label='mag', alpha=0.7)
 gyro = list(map(rad2deg, accdata['gyro_x']))
