@@ -31,6 +31,7 @@ class rtk(IntEnum):
 def deg2rad(x):
     return x * np.pi/180
 
+
 def rad2deg(x):
     return x * 180/np.pi
 
@@ -76,17 +77,14 @@ def loadAccData(filename):
     accdict = {}
     accdict['time'] = acctime
 
-    # accdict['acc'] = []
     accdict['acc_x'] = list(accdata[acc.acc_x].astype('f8'))
     accdict['acc_y'] = list(accdata[acc.acc_y].astype('f8'))
     accdict['acc_z'] = list(accdata[acc.acc_z].astype('f8'))
 
-    # accdict['gyro'] = []
     accdict['gyro_x'] = list(accdata[acc.gyro_x].astype('f8'))
     accdict['gyro_y'] = list(accdata[acc.gyro_y].astype('f8'))
     accdict['gyro_z'] = list(accdata[acc.gyro_z].astype('f8'))
 
-    # accdict['mag'] = []
     accdict['mag_x'] = list(accdata[acc.angle_x].astype('f8'))
     accdict['mag_y'] = list(accdata[acc.angle_y].astype('f8'))
     accdict['mag_z'] = list(accdata[acc.angle_z].astype('f8'))
@@ -281,7 +279,7 @@ def differential(time, data):
 fig = plt.figure(figsize=(8, 8))
 
 # 加速度
-graph1 = fig.add_subplot(311)
+graph1 = fig.add_subplot(211)
 acc_x = list(map(lambda x: x / 9.8, accdata['acc_x']))
 acc_y = list(map(lambda x: x / 9.8, accdata['acc_y']))
 acc_z = list(map(lambda x: x / 9.8, accdata['acc_z']))
@@ -298,7 +296,7 @@ graph1.grid()
 graph1.legend()
 
 # 角度
-graph2 = fig.add_subplot(312)
+graph2 = fig.add_subplot(212)
 rtkangle = list(map(rad2deg, rtkdata['angle']))
 mag = list(map(rad2deg, accdata['mag_z']))
 graph2.plot(rtkdata['time'], rtkangle, label='rtk')
@@ -307,14 +305,14 @@ graph2.plot(accdata['time'], LPF(angleByGyro[0], 10), label='gyro', alpha=0.7)
 graph2.grid()
 graph2.legend()
 
-graph3 = fig.add_subplot(313)
-drtkangle = differential(rtkdata['time'], rtkangle)
-graph3.plot(rtkdata['time'], drtkangle, label='rtk')
-dmag = differential(accdata['time'], mag)
-graph3.plot(accdata['time'], LPF(dmag, 10), label='mag', alpha=0.7)
-gyro = list(map(rad2deg, accdata['gyro_x']))
-graph3.plot(accdata['time'], LPF(gyro, 10), label='gyro', alpha=0.7)
-graph3.grid()
-graph3.legend()
+# graph3 = fig.add_subplot(313)
+# drtkangle = differential(rtkdata['time'], rtkangle)
+# graph3.plot(rtkdata['time'], drtkangle, label='rtk')
+# dmag = differential(accdata['time'], mag)
+# graph3.plot(accdata['time'], LPF(dmag, 10), label='mag', alpha=0.7)
+# gyro = list(map(rad2deg, accdata['gyro_x']))
+# graph3.plot(accdata['time'], LPF(gyro, 10), label='gyro', alpha=0.7)
+# graph3.grid()
+# graph3.legend()
 
 plt.show()
