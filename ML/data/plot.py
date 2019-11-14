@@ -25,12 +25,19 @@ class item(IntEnum):
 
 
 # データの読み込み
-filename = '0912_1800'
+# filename = '0912_1800'
 # filename = '0912_1815'
 # filename = '0925'
 # filename = '1010'
+# filename = '1104_1607'
+# filename = '1104_1650'
+# filename = '1104_1744'
+filename = '1106_1059'
+# filename = '1106_1120'
+# filename = '1106_1136'
+# filename = '1106_1152'
 
-data = np.loadtxt('acc/' + filename + 'acc.csv', delimiter=',',
+data = np.loadtxt('data/acc/' + filename + 'acc.csv', delimiter=',',
                   skiprows=1, unpack=True, dtype=str)
 time = []
 acc = []

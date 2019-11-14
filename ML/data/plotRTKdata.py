@@ -42,41 +42,49 @@ def changeHz(inputlist):
     return returnlist
 
 # データ読み込み
-filename = '1010'
-acc, speed = loaddata('ML/' + filename + '.csv')
-latitude, longitude = loadrtkdata('rtk/csv/' + filename + 'rtk.csv')
+# filename = '1010'
+# filename = '1104_1607'
+# filename = '1104_1650'
+# filename = '1104_1744'
+# filename = '1106_1059'
+# filename = '1106_1120'
+# filename = '1106_1136'
+filename = '1106_1152'
+
+acc, speed = loaddata('data/ML/' + filename + '.csv')
+latitude, longitude = loadrtkdata('data/rtk/csv/' + filename + 'rtk.csv')
 
 # グラフ表示
-fig = plt.figure(figsize=(8, 6))
+# fig = plt.figure(figsize=(8, 6))
 
-graph1 = fig.add_subplot(121)
-graph1.plot(changeHz(latitude), changeHz(longitude))
-graph1.set_aspect('equal')
-graph1.set_xlabel('latitude')
-graph1.set_ylabel('longitud')
-graph1.get_xaxis().get_major_formatter().set_useOffset(False)
-graph1.get_yaxis().get_major_formatter().set_useOffset(False)
-graph1.grid()
+# graph1 = fig.add_subplot(121)
+# graph1.plot(changeHz(latitude), changeHz(longitude))
+# graph1.set_aspect('equal')
+# graph1.set_xlabel('latitude')
+# graph1.set_ylabel('longitud')
+# graph1.get_xaxis().get_major_formatter().set_useOffset(False)
+# graph1.get_yaxis().get_major_formatter().set_useOffset(False)
+# graph1.grid()
 
-graph2_1 = fig.add_subplot(122)
-graph2_1.set_xlabel('time [s]')
-graph2_1.plot(changeHz(longitude), label='longitude')
-graph2_1.get_yaxis().get_major_formatter().set_useOffset(False)
-graph2_1.grid()
+# graph2_1 = fig.add_subplot(122)
+# graph2_1.set_xlabel('time [s]')
+# graph2_1.plot(changeHz(longitude), label='longitude')
+# graph2_1.get_yaxis().get_major_formatter().set_useOffset(False)
+# graph2_1.grid()
 
-graph2_2 = graph2_1.twinx()
-graph2_2.set_ylabel('speed [m/s]')
-graph2_2.plot(speed, color='gray', label='speed')
+# graph2_2 = graph2_1.twinx()
+# graph2_2.set_ylabel('speed [m/s]')
+# graph2_2.plot(speed, color='gray', label='speed')
 
-h1, l1 = graph2_1.get_legend_handles_labels()
-h2, l2 = graph2_2.get_legend_handles_labels()
-graph2_1.legend(h1+h2, l1+l2, loc='lower right')
-graph2_1.tick_params(labelleft=False, left=False)
-graph1.tick_params(labelleft=False, labelbottom=False,
-                   left=False, bottom=False)
-plt.subplots_adjust(left=-0.1, wspace=-0.2)
+# h1, l1 = graph2_1.get_legend_handles_labels()
+# h2, l2 = graph2_2.get_legend_handles_labels()
+# graph2_1.legend(h1+h2, l1+l2, loc='lower right')
+# graph2_1.tick_params(labelleft=False, left=False)
+# graph1.tick_params(labelleft=False, labelbottom=False,
+#                    left=False, bottom=False)
+# plt.subplots_adjust(left=-0.1, wspace=-0.2)
 
-plt.savefig('graph/' + filename + 'speed.png')
+# plt.savefig('graph/' + filename + 'speed.png')
 
 
 minute = 5
@@ -84,7 +92,7 @@ x = changeHz(longitude[0:5*60 * minute])
 y = changeHz(latitude[0:5*60 * minute])
 
 fig, axes = plt.subplots(figsize=(10, 5))
-axes.scatter(x, y, marker='.')
+axes.plot(x, y, marker='.')
 axes.set_aspect('equal')
 plt.xlabel('longitud')
 plt.ylabel('latitude')

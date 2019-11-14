@@ -5,7 +5,6 @@ from enum import IntEnum, auto
 import matplotlib.pyplot as plt
 import numpy as np
 
-
 # データの項目
 class acc(IntEnum):
     time = 0
@@ -176,7 +175,14 @@ def LPF(input, num=5):
 # filename = '0912_1800'
 # filename = '0912_1815'
 # filename = '0925'
-filename = '1010'
+# filename = '1010'
+# filename = '1104_1607'
+# filename = '1104_1650'
+# filename = '1104_1744'
+filename = '1106_1059'
+# filename = '1106_1120'
+# filename = '1106_1136'
+# filename = '1106_1152'
 
 # データの読み込み
 accdata = loadAccData('data/acc/' + filename + 'acc.csv')
@@ -210,7 +216,7 @@ datanum = 50
 f = open('data/ML/' + filename + '.csv', mode='w')
 f.write('time[s], speed[m/s], accwave_x({0})[G], accwave_y({0})[G],'
         'accwave_z({0})[G]\n'.format(datanum))
-for i in range(len(speed_1Hz['speed'])):
+for i in range(20, len(speed_1Hz['speed'])):
     if datanum * (i+1) > len(accdata['time']):
         break
     f.write(str(i) + ', ' + str(speed_1Hz['speed'][i]) + ', ')
@@ -237,43 +243,43 @@ for i in range(len(rtkdata['angle'])):
     f.write('\n')
 f.close
 
-# 時系列処理
-gyro = []
-gyro.append(accdata['gyro_x'])
-gyro.append(accdata['gyro_y'])
-gyro.append(accdata['gyro_z'])
-angleByGyro = []
-angleByGyro.append([0.0])
-angleByGyro.append([0.0])
-angleByGyro.append([0.0])
-Xlist = [0.0]
-Ylist = [0.0]
-for i in range(1, len(accdata['gyro_x'])):
-    for j in range(3):
-        angle = angleByGyro[j][i-1] - gyro[j][i]
-        if angle > 180:
-            angle -= 360
-        elif angle < -180:
-            angle += 360
-        angleByGyro[j].append(angle)
+# # 時系列処理
+# gyro = []
+# gyro.append(accdata['gyro_x'])
+# gyro.append(accdata['gyro_y'])
+# gyro.append(accdata['gyro_z'])
+# angleByGyro = []
+# angleByGyro.append([0.0])
+# angleByGyro.append([0.0])
+# angleByGyro.append([0.0])
+# Xlist = [0.0]
+# Ylist = [0.0]
+# for i in range(1, len(accdata['gyro_x'])):
+#     for j in range(3):
+#         angle = angleByGyro[j][i-1] - gyro[j][i]
+#         if angle > 180:
+#             angle -= 360
+#         elif angle < -180:
+#             angle += 360
+#         angleByGyro[j].append(angle)
 
-    if accdata['stepflag'][i] > 0:
-        stride = 0.5
-        Xlist.append(Xlist[-1] + stride * np.cos(accdata['mag_z'][i]))
-        Ylist.append(Ylist[-1] + stride * np.sin(accdata['mag_z'][i]))
+#     if accdata['stepflag'][i] > 0:
+#         stride = 0.5
+#         Xlist.append(Xlist[-1] + stride * np.cos(accdata['mag_z'][i]))
+#         Ylist.append(Ylist[-1] + stride * np.sin(accdata['mag_z'][i]))
 
-# 微分
-def differential(time, data):
-    output = [0.0]
-    for i in range(1, len(time)):
-        timeDiff = timeSub(time[i], time[i-1])
-        angleDiff = data[i] - data[i-1]
-        if angleDiff > 180:
-            angleDiff -= 360
-        elif angleDiff < -180:
-            angleDiff += 360
-        output.append(angleDiff / timeDiff)
-    return output
+# # 微分
+# def differential(time, data):
+#     output = [0.0]
+#     for i in range(1, len(time)):
+#         timeDiff = timeSub(time[i], time[i-1])
+#         angleDiff = data[i] - data[i-1]
+#         if angleDiff > 180:
+#             angleDiff -= 360
+#         elif angleDiff < -180:
+#             angleDiff += 360
+#         output.append(angleDiff / timeDiff)
+#     return output
 
 # グラフ表示
 fig = plt.figure(figsize=(8, 8))
@@ -290,8 +296,6 @@ graph1.plot(accdata['time'], acc_z, marker='.', label='acc_z')
 graph1.plot(speed['time'], speed['speed'], marker='.', label='speed')
 graph1.plot(speed_1Hz['time'], speed_1Hz['speed'],
             marker='.', label='speed_1Hz')
-acc = differential(speed['time'], speed['speed'])
-graph1.plot(speed['time'], acc, marker='.', label='acc_rtk')
 graph1.grid()
 graph1.legend()
 
@@ -301,18 +305,8 @@ rtkangle = list(map(rad2deg, rtkdata['angle']))
 mag = list(map(rad2deg, accdata['mag_z']))
 graph2.plot(rtkdata['time'], rtkangle, label='rtk')
 graph2.plot(accdata['time'], LPF(mag, 10), label='mag', alpha=0.7)
-graph2.plot(accdata['time'], LPF(angleByGyro[0], 10), label='gyro', alpha=0.7)
+# graph2.plot(accdata['time'], LPF(angleByGyro[0], 10), label='gyro', alpha=0.7)
 graph2.grid()
 graph2.legend()
-
-# graph3 = fig.add_subplot(313)
-# drtkangle = differential(rtkdata['time'], rtkangle)
-# graph3.plot(rtkdata['time'], drtkangle, label='rtk')
-# dmag = differential(accdata['time'], mag)
-# graph3.plot(accdata['time'], LPF(dmag, 10), label='mag', alpha=0.7)
-# gyro = list(map(rad2deg, accdata['gyro_x']))
-# graph3.plot(accdata['time'], LPF(gyro, 10), label='gyro', alpha=0.7)
-# graph3.grid()
-# graph3.legend()
 
 plt.show()
